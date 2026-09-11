@@ -34,6 +34,33 @@ Callbacks are HMAC-SHA256 signed (`x-signature` over the raw body,
 `PAYMENT_WEBHOOK_SECRET`, default `dev-secret` for local dev). Status cards
 poll via HTMX until terminal (`confirmed`, `payment_failed`, `hold_expired`).
 
+## Synthetic data
+
+`bun scripts/db-setup.ts` truncates and reseeds everything (safe to rerun).
+4 parents (Ana, Budi, Cici, Dewi), 6 students, 3 classes at cap 4:
+
+| Class | Seated | Shows |
+|---|---|---|
+| Math Trial | 2 confirmed + 1 held | open seats, held-seat picker note, roster rows |
+| Robot Trial | 1 confirmed | nearly-full class |
+| Science Trial | 1 confirmed + 1 failed | roster row + failed-payment retry demo (`bk_fail`: re-book reuses it) |
+
+## Verification
+
+```sh
+bun run typecheck            # tsc --noEmit, must be clean
+bun test                     # 9 integration tests: dedupe, roster exclusion,
+                             # callback idempotency, hold rejection, hold expiry,
+                             # fail-releases-seat, late-callback auto-refund
+bun scripts/verify-invariants.ts   # no dupes, nothing over maximum_capacity,
+                             # no unpaid booking on roster, seat counts reconcile,
+                             # no hold without expiry → "invariants ok"
+```
+
+Manual click-through: book from `/` → fail the invoice via `mock-payment.ts`
+→ red card with Try again → retry → succeed → polls to confirmed on the roster.
+Late-success-after-expiry lands in `/admin/payments` and drains as a refund.
+
 ## What was built
 
 - Booking: parent/child/class validation, idempotent start (UNIQUE
@@ -44,16 +71,16 @@ poll via HTMX until terminal (`confirmed`, `payment_failed`, `hold_expired`).
   rejects UPDATE/DELETE), monotonic attempt transitions, succeeded callbacks
   confirm synchronously in the same transaction. Failed payments release
   the held seat at once.
-- Hold sweeper (`outbox-worker.ts`, 30 s tick): expires timed-out holds back
-  to `hold_expired` with seat release. No queues, no background allocation.
+- Hold sweeper (`hold-sweeper.ts`, 30 s tick): expires timed-out holds back
+  to `hold_expired` with seat release, drains queued refunds. No allocation queue.
 - UI: booking form (preloaded children, seat counts, Full badges), live status
   cards with invoice id + retry-after-fail button, roster, per-parent payment
   ledger. Every `INSERT` is console-logged (`[db-insert] <table> […]`) from a
   single proxy in `src/infrastructure/database.ts`.
-- Checks: 8 integration tests (dedupe, roster exclusion, callback idempotency,
-  hold rejection + expiry + fail-release), `verify-invariants.ts`
-  (no dupes, no over-capacity, no unpaid in roster, seat counts reconcile
-  against seated bookings, no hold without expiry).
+- Checks: 9 integration tests (dedupe, roster exclusion, callback idempotency,
+  hold rejection + expiry + fail-release + late-callback auto-refund),
+  `verify-invariants.ts` (no dupes, no over-capacity, no unpaid in roster,
+  seat counts reconcile against seated bookings, no hold without expiry).
 
 ## Time spent
 
