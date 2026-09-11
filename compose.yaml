@@ -1,0 +1,14 @@
+services:
+  db:
+    image: docker.io/library/postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: otto
+    ports:
+      - "5433:5432"
+    volumes:
+      - otto-pgdata:/var/lib/postgresql/data
+
+volumes:
+  otto-pgdata:

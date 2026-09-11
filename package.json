@@ -1,0 +1,28 @@
+{
+  "name": "ottodottht",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "bun test",
+    "db:setup": "bun scripts/db-setup.ts",
+    "typecheck": "tsc --noEmit",
+    "verify:invariants": "bun scripts/verify-invariants.ts",
+    "dev": "bun src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.18.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "bun-types": "^1.4.2"
+  }
+}
